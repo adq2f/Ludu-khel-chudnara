@@ -1,4 +1,4 @@
-// ============ GAME STATE ============
+// ============ STATE ============
 const state = {
   players: ['Player 1', 'Player 2', 'Player 3', 'Player 4'],
   colors: ['red', 'green', 'yellow', 'blue'],
@@ -8,13 +8,13 @@ const state = {
   mustMove: false,
   gameStarted: false,
   tokens: {
-    red: [-1, -1, -1, -1],
-    green: [-1, -1, -1, -1],
+    red:    [-1, -1, -1, -1],
+    green:  [-1, -1, -1, -1],
     yellow: [-1, -1, -1, -1],
-    blue: [-1, -1, -1, -1]
+    blue:   [-1, -1, -1, -1]
   },
-  legalMoves: [],
-  renderPos: {}
+  renderPos: {},
+  legalMoves: []
 };
 
 // ============ DOM ============
@@ -24,20 +24,75 @@ const landing = document.getElementById('landing');
 const gameScreen = document.getElementById('game');
 const turnBanner = document.getElementById('turnBanner');
 const diceBox = document.getElementById('diceBox');
-const playersInfo = document.getElementById('playersInfo');
+const rollBtn = document.getElementById('rollBtn');
+const timerText = document.getElementById('timerText');
 const matchRunning = document.getElementById('matchRunning');
 const matchRunningBtn = document.getElementById('matchRunningBtn');
 const controllerPanel = document.getElementById('controller');
 const ctrlTurn = document.getElementById('ctrlTurn');
 const ctrlDice = document.getElementById('ctrlDice');
 const ctrlRollBtn = document.getElementById('ctrlRollBtn');
+const ctrlForceBtns = document.querySelectorAll('.force-dice');
 const ctrlCloseBtn = document.getElementById('ctrlCloseBtn');
+const ctrlSkipBtn = document.getElementById('ctrlSkipBtn');
+
+// ============ TIMER ============
+const ROLL_TIME = 20000;
+let rollTimerId = null;
+let rollTimeLeft = 0;
+
+function startRollTimer() {
+  stopRollTimer();
+  rollTimeLeft = ROLL_TIME;
+  updateTimerUI();
+  rollTimerId = setInterval(() => {
+    rollTimeLeft -= 100;
+    updateTimerUI();
+    if (rollTimeLeft <= 0) {
+      stopRollTimer();
+      flashMessage('⏰ সময় শেষ! অটো-রোল');
+      autoRollDice();
+    }
+  }, 100);
+}
+function stopRollTimer() {
+  if (rollTimerId) clearInterval(rollTimerId);
+  rollTimerId = null;
+  if (timerText) timerText.textContent = '';
+}
+function updateTimerUI() {
+  if (!timerText) return;
+  const s = Math.max(0, Math.ceil(rollTimeLeft / 1000));
+  timerText.textContent = s + 's';
+}
+
+// ============ SVG DICE ============
+function diceSVG(v) {
+  const dotMap = {
+    1: [[50,50]],
+    2: [[28,28],[72,72]],
+    3: [[28,28],[50,50],[72,72]],
+    4: [[28,28],[72,28],[28,72],[72,72]],
+    5: [[28,28],[72,28],[50,50],[28,72],[72,72]],
+    6: [[28,25],[72,25],[28,50],[72,50],[28,75],[72,75]]
+  };
+  const dots = (dotMap[v] || []).map(([cx,cy]) =>
+    `<circle cx="${cx}" cy="${cy}" r="9" fill="#1a1a1a"/>`).join('');
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="2" width="96" height="96" rx="18" fill="#ffffff" stroke="#d0d5e0" stroke-width="3"/>
+    ${dots}
+  </svg>`;
+}
+function setDice(v) {
+  diceBox.innerHTML = v ? diceSVG(v) : '–';
+  ctrlDice.innerHTML = v ? diceSVG(v) : '–';
+}
 
 // ============ START GAME ============
 document.getElementById('playBtn').addEventListener('click', startGame);
 
 function startGame() {
-  Sound.unlock(); // সাউন্ড ইঞ্জিন চালু
+  if (typeof Sound !== 'undefined' && Sound.unlock) Sound.unlock();
   landing.classList.remove('show');
   gameScreen.classList.add('show');
   state.gameStarted = true;
@@ -46,14 +101,13 @@ function startGame() {
   state.mustMove = false;
   state.dice = 0;
   state.legalMoves = [];
-  // রিসেট টোকেন
   state.tokens = {
-    red: [-1, -1, -1, -1],
-    green: [-1, -1, -1, -1],
+    red:    [-1, -1, -1, -1],
+    green:  [-1, -1, -1, -1],
     yellow: [-1, -1, -1, -1],
-    blue: [-1, -1, -1, -1]
+    blue:   [-1, -1, -1, -1]
   };
-  // রেন্ডার পজিশন ইনিশিয়ালাইজ
+  state.renderPos = {};
   LudoBoard.COLORS.forEach(c => {
     state.renderPos[c] = [];
     for (let i = 0; i < 4; i++) {
@@ -61,15 +115,15 @@ function startGame() {
     }
   });
   updateTurnUI();
+  startRollTimer();           // ⏱️ timer শুরু
   requestAnimationFrame(gameLoop);
 }
 
-// ============ RENDER LOOP ============
+// ============ LOOP ============
 function gameLoop() {
   render();
   requestAnimationFrame(gameLoop);
 }
-
 function render() {
   const bg = LudoBoard.getBG();
   CTX.clearRect(0, 0, CANVAS.width, CANVAS.height);
@@ -86,46 +140,51 @@ function render() {
   });
 }
 
-// ============ TURN UI ============
+// ============ TURN ============
 function updateTurnUI() {
   const name = state.players[state.currentTurn];
   const color = state.colors[state.currentTurn];
-  turnBanner.textContent = `${name} er turn (${color})`;
+  turnBanner.textContent = `${name} এর পালা`;
   turnBanner.style.background = LudoBoard.HEX[color];
-  ctrlTurn.textContent = `${name} er turn`;
-  diceBox.textContent = state.dice || '–';
-  ctrlDice.textContent = state.dice || '–';
+  ctrlTurn.textContent = `${name} এর পালা`;
+  rollBtn.disabled = false;
+  rollBtn.classList.add('active');
+  setDice(state.dice);
 }
-
 function nextTurn() {
+  stopRollTimer();
   state.currentTurn = (state.currentTurn + 1) % 4;
   state.sixStreak = 0;
   state.mustMove = false;
   state.dice = 0;
   state.legalMoves = [];
   updateTurnUI();
+  startRollTimer();
 }
 
-// ============ DICE ROLL ============
-function rollDice() {
+// ============ ROLL ============
+function rollDice(forcedValue) {
   if (!state.gameStarted) return;
   if (state.mustMove) {
     flashMessage('আগে টোকেন মুভ/প্লেস করুন!');
     return;
   }
+  stopRollTimer();
 
-  const value = 1 + Math.floor(Math.random() * 6);
+  const value = forcedValue != null ? forcedValue : 1 + Math.floor(Math.random() * 6);
   state.dice = value;
-  diceBox.textContent = value;
-  ctrlDice.textContent = value;
-  Sound.dice();
+  setDice(value);
+  if (typeof Sound !== 'undefined' && Sound.dice) Sound.dice();
 
-  // ---- 6 এর নিয়ম ----
+  rollBtn.disabled = true;
+  rollBtn.classList.remove('active');
+
+  // --- 6 এর নিয়ম ---
   if (value === 6) {
     state.sixStreak++;
     if (state.sixStreak === 3) {
-      flashMessage('৩ বার ৬! টার্ন চলে গেল');
-      Sound.error();
+      flashMessage('৩ বার ছয়! পালা চলে গেল');
+      if (typeof Sound !== 'undefined' && Sound.error) Sound.error();
       state.sixStreak = 0;
       state.mustMove = false;
       setTimeout(nextTurn, 900);
@@ -141,7 +200,7 @@ function rollDice() {
     return;
   }
 
-  // ---- Non-6 ----
+  // --- non-6 ---
   state.sixStreak = 0;
   state.mustMove = true;
   computeLegalMoves(value);
@@ -152,15 +211,21 @@ function rollDice() {
   }
 }
 
+function autoRollDice() {
+  if (!state.mustMove && state.gameStarted) {
+    rollDice();
+  }
+}
+
 function computeLegalMoves(dice) {
   const color = state.colors[state.currentTurn];
   const tokens = state.tokens[color];
   const moves = [];
   for (let i = 0; i < 4; i++) {
     const p = tokens[i];
-    if (p === 56) continue; // ফিনিশ
+    if (p === 56) continue;
     if (p === -1) {
-      if (dice === 6) moves.push(i); // বেস থেকে বেরোতে ৬ লাগবে
+      if (dice === 6) moves.push(i);
     } else if (p + dice <= 56) {
       moves.push(i);
     }
@@ -168,10 +233,8 @@ function computeLegalMoves(dice) {
   state.legalMoves = moves;
 }
 
-// ============ TOKEN CLICK / MOVE ============
+// ============ CLICK TOKEN ============
 CANVAS.addEventListener('click', (e) => {
-  handleTap(); // 7-ট্যাপ ডিটেকশন
-
   if (!state.mustMove || state.legalMoves.length === 0) return;
 
   const rect = CANVAS.getBoundingClientRect();
@@ -181,21 +244,15 @@ CANVAS.addEventListener('click', (e) => {
   const y = (e.clientY - rect.top) * scaleY;
 
   const color = state.colors[state.currentTurn];
-  let best = -1;
-  let bestDist = 40;
+  let best = -1, bestDist = 46;
 
   state.legalMoves.forEach(i => {
     const pos = LudoBoard.posToXY(color, state.tokens[color][i], i);
     const d = Math.hypot(pos.x - x, pos.y - y);
-    if (d < bestDist) {
-      bestDist = d;
-      best = i;
-    }
+    if (d < bestDist) { bestDist = d; best = i; }
   });
 
-  if (best >= 0) {
-    moveToken(color, best, state.dice);
-  }
+  if (best >= 0) moveToken(color, best, state.dice);
 });
 
 function moveToken(color, idx, dice) {
@@ -206,22 +263,22 @@ function moveToken(color, idx, dice) {
   state.renderPos[color][idx] = LudoBoard.posToXY(color, to, idx);
   state.mustMove = false;
   state.legalMoves = [];
-  Sound.land();
+  if (typeof Sound !== 'undefined' && Sound.land) Sound.land();
 
-  // ক্যাপচার লজিক
+  // capture
   if (to >= 0 && to <= 50) {
-    const abs = (LudoBoard.START[color] + to) % 52;
+    const abs = (LudoBoard.STARTS[color] + to) % 52;
     if (!LudoBoard.SAFE.includes(abs)) {
       state.colors.forEach(oc => {
         if (oc === color) return;
         const ot = state.tokens[oc];
         for (let j = 0; j < 4; j++) {
           if (ot[j] >= 0 && ot[j] <= 50) {
-            const oAbs = (LudoBoard.START[oc] + ot[j]) % 52;
+            const oAbs = (LudoBoard.STARTS[oc] + ot[j]) % 52;
             if (oAbs === abs) {
               ot[j] = -1;
               state.renderPos[oc][j] = LudoBoard.posToXY(oc, -1, j);
-              Sound.capture();
+              if (typeof Sound !== 'undefined' && Sound.capture) Sound.capture();
             }
           }
         }
@@ -229,41 +286,59 @@ function moveToken(color, idx, dice) {
     }
   }
 
-  // জয় পরীক্ষা
+  // win
   if (state.tokens[color].every(p => p === 56)) {
     flashMessage(`${state.players[state.currentTurn]} জিতেছে!`);
-    Sound.win();
+    if (typeof Sound !== 'undefined' && Sound.win) Sound.win();
     state.gameStarted = false;
+    stopRollTimer();
     return;
   }
 
-  // ৬ হলে একই প্লেয়ার আবার রোল করবে (৩-বার স্ট্রিক নিয়মের অধীনে)
+  // 6 → same player rolls again
   if (dice === 6 && state.sixStreak < 3) {
     state.mustMove = false;
     state.dice = 0;
     updateTurnUI();
+    startRollTimer();
   } else {
-    nextTurn();
+    setTimeout(nextTurn, 350);
   }
 }
 
-// ============ 7-TAP CONTROLLER ============
+// ============ MAIN ROLL BUTTON ============
+rollBtn.addEventListener('click', () => rollDice());
+
+// ============ 7-TAP ANYWHERE (except Play Game button) ============
 let tapCount = 0;
 let tapTimer = null;
 
-function handleTap() {
+document.addEventListener('click', (e) => {
+  // Play Game বাটন এবং এর ভিতরে হলে গোনা হবে না
+  if (e.target.closest('#playBtn')) return;
+  // Controller নিজেই খোলা থাকলে গোনা হবে না
+  if (e.target.closest('#controller')) return;
+  // 1 Match Running / overlay নিজেও গোনা হবে না
+  if (e.target.closest('#matchRunning')) return;
+
   tapCount++;
   clearTimeout(tapTimer);
   tapTimer = setTimeout(() => { tapCount = 0; }, 1200);
+
   if (tapCount >= 7) {
     tapCount = 0;
-    matchRunning.classList.remove('hidden');
+    openController();
   }
+}, true);
+
+function openController() {
+  controllerPanel.classList.remove('hidden');
+  ctrlTurn.textContent = state.players[state.currentTurn] + ' এর পালা';
 }
 
 matchRunningBtn.addEventListener('click', () => {
   matchRunning.classList.add('hidden');
-  controllerPanel.classList.remove('hidden');
+  openController();
 });
 
 ctrlCloseBtn.addEventListener('click', () => {
@@ -274,11 +349,25 @@ ctrlRollBtn.addEventListener('click', () => {
   rollDice();
 });
 
+ctrlForceBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const v = parseInt(btn.dataset.value, 10);
+    rollDice(v);
+  });
+});
+
+if (ctrlSkipBtn) {
+  ctrlSkipBtn.addEventListener('click', () => {
+    controllerPanel.classList.add('hidden');
+    nextTurn();
+  });
+}
+
 // ============ HELPERS ============
 function flashMessage(msg) {
   const el = document.createElement('div');
   el.className = 'flash';
   el.textContent = msg;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1200);
+  setTimeout(() => el.remove(), 1400);
 }
