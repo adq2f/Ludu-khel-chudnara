@@ -8,37 +8,52 @@
 </head>
 <body>
 
-  <!-- ===== Landing Screen ===== -->
+  <!-- ============ LANDING ============ -->
   <div id="landing" class="screen show">
     <h1 class="logo">🎲 Ludu Khela</h1>
     <p class="tagline">৪ জন একসাথে খেলুন</p>
-    <button id="playBtn" class="big-btn">Play Game</button>
+    <button id="playBtn" class="big-btn">▶ Play Game</button>
+    <p class="hint">প্রথমে Play Game চাপুন</p>
   </div>
 
-  <!-- ===== Game Screen ===== -->
+  <!-- ============ GAME ============ -->
   <div id="game" class="screen">
-    <div id="turnBanner" class="turn-banner">Player 1 er turn</div>
+    <div id="turnBanner" class="turn-banner">Player 1 এর পালা</div>
+
     <div class="board-wrap">
       <canvas id="board" width="600" height="600"></canvas>
     </div>
-    <div class="dice-row">
+
+    <div class="controls-row">
       <div id="diceBox" class="dice-box">–</div>
+      <button id="rollBtn" class="roll-btn">
+        <span class="roll-label">🎲 Roll</span>
+        <span id="timerText" class="timer-text"></span>
+      </button>
     </div>
-    <div id="playersInfo" class="players-info"></div>
   </div>
 
-  <!-- ===== 1 Match Running Overlay (hidden) ===== -->
+  <!-- ============ 1 MATCH RUNNING (hidden; only 7-tap এ খোলে) ============ -->
   <div id="matchRunning" class="overlay hidden">
-    <button id="matchRunningBtn" class="big-btn green">1 Match Running</button>
+    <button id="matchRunningBtn" class="big-btn green">Continue Match</button>
   </div>
 
-  <!-- ===== Controller Panel (hidden) ===== -->
+  <!-- ============ CONTROLLER PANEL ============ -->
   <div id="controller" class="overlay hidden">
     <div class="panel">
       <h2>🎛️ Controller</h2>
-      <div id="ctrlTurn" class="ctrl-turn">Player 1 er turn</div>
+      <div id="ctrlTurn" class="ctrl-turn">Player 1 এর পালা</div>
       <div id="ctrlDice" class="ctrl-dice">–</div>
-      <button id="ctrlRollBtn" class="big-btn">Roll Dice</button>
+      <button id="ctrlRollBtn" class="big-btn">🎲 Roll</button>
+      <div class="force-grid">
+        <button class="force-dice" data-value="1">1</button>
+        <button class="force-dice" data-value="2">2</button>
+        <button class="force-dice" data-value="3">3</button>
+        <button class="force-dice" data-value="4">4</button>
+        <button class="force-dice" data-value="5">5</button>
+        <button class="force-dice" data-value="6">6</button>
+      </div>
+      <button id="ctrlSkipBtn" class="close-btn">⏭ Force Skip Turn</button>
       <button id="ctrlCloseBtn" class="close-btn">✕ Close</button>
     </div>
   </div>
