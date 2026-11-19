@@ -1,127 +1,52 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#0b1120">
-<title>Ludo King · Multiplayer</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ludu Khela</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- ========== ENTRY ========== -->
-<section id="screenEntry" class="screen show">
-  <div class="card">
-    <h1 class="logo">LUDO<span>KING</span></h1>
-    <p class="tagline">Multiplayer · Match Code</p>
-
-    <label class="lbl">Your Name</label>
-    <input id="nameInput" class="inp" maxlength="12" placeholder="e.g. Rahim">
-
-    <label class="lbl">Total Players</label>
-    <div class="seg" id="maxSeg">
-      <button data-v="2">2</button>
-      <button data-v="3">3</button>
-      <button data-v="4" class="on">4</button>
-    </div>
-
-    <button id="createBtn" class="btn primary">Create Room</button>
-
-    <div class="divider"><span>or join with code</span></div>
-    <input id="codeInput" class="inp code" maxlength="6" placeholder="ABC123">
-    <button id="joinBtn" class="btn">Join Room</button>
-
-    <p class="hint" id="entryHint"></p>
-  </div>
-</section>
-
-<!-- ========== LOBBY ========== -->
-<section id="screenLobby" class="screen">
-  <div class="card">
-    <p class="lbl">Match Code</p>
-    <div class="codeBox" id="lobbyCode">------</div>
-    <p class="hint">Share with friends</p>
-
-    <p class="lbl">Players</p>
-    <div id="lobbyPlayers" class="playerList"></div>
-
-    <div class="row">
-      <button id="startBtn" class="btn primary">Start Game</button>
-      <button id="leaveBtn" class="btn ghost">Leave</button>
-    </div>
-  </div>
-</section>
-
-<!-- ========== GAME ========== -->
-<section id="screenGame" class="screen">
-  <header class="hud">
-    <div class="chip">#<span id="gameCode">------</span></div>
-    <div class="chip small" id="streakChip" style="display:none"></div>
-    <button id="soundBtn" class="iconBtn">🔊</button>
-  </header>
-
-  <div class="boardWrap">
-    <canvas id="board" width="600" height="600"></canvas>
+  <!-- ===== LANDING PAGE ===== -->
+  <div id="landing" class="screen">
+    <h1 class="logo">🎲 Ludu Khela</h1>
+    <button id="playBtn" class="big-btn">Play Game</button>
+    <p class="hint">৪ জন একসাথে খেলুন</p>
   </div>
 
-  <footer class="controls">
-    <div id="turnBanner" class="banner">Waiting…</div>
-    <div class="diceRow">
-      <div class="diceStage">
-        <div class="dice" id="dice">
-          <div class="face f1"></div><div class="face f2"></div>
-          <div class="face f3"></div><div class="face f4"></div>
-          <div class="face f5"></div><div class="face f6"></div>
-        </div>
-      </div>
-      <button id="rollBtn" class="btn rollBtn" disabled>ROLL</button>
-    </div>
-  </footer>
-</section>
+  <!-- ===== GAME SCREEN ===== -->
+  <div id="game" class="screen hidden">
+    <div id="turnBanner" class="turn-banner">Player 1 er turn</div>
 
-<!-- ========== WIN ========== -->
-<div id="winOverlay" class="overlay">
-  <div class="winCard">
-    <div class="trophy">🏆</div>
-    <h2 id="winText">Winner!</h2>
-    <button id="againBtn" class="btn primary">Play Again</button>
+    <div class="board-wrap">
+      <canvas id="board" width="420" height="420"></canvas>
+    </div>
+
+    <div id="diceBox" class="dice-box">
+      <span id="diceValue">–</span>
+    </div>
+
+    <div id="playersInfo" class="players-info"></div>
   </div>
-</div>
 
-<!-- ========== SECRET EMOJI ========== -->
-<div id="secretEmoji" title="">🎲</div>
+  <!-- ===== 1 MATCH RUNNING (hidden, 7-tap পরে দেখাবে) ===== -->
+  <div id="matchRunning" class="hidden overlay">
+    <button id="matchRunningBtn" class="big-btn green">1 Match Running</button>
+  </div>
 
-<!-- ========== CONTROLLER MODAL ========== -->
-<div id="ctrlModal">
-  <div class="ctrlCard">
-    <button class="ctrlClose" id="ctrlClose">✕</button>
-
-    <div id="ctrlJoinForm">
-      <h2 class="ctrlTitle">🔮 Controller</h2>
-      <p class="ctrlSub">Match code din</p>
-      <input id="ctrlCodeIn" class="inp code" maxlength="6" placeholder="ABC123">
-      <button id="ctrlJoinBtn" class="btn primary">Enter</button>
-    </div>
-
-    <div id="ctrlDash" style="display:none">
-      <h2 class="ctrlTitle">🔮 Controller Panel</h2>
-      <div class="ctrlInfo">
-        <div>Match: <b id="ctrlMatchId">—</b></div>
-        <div>Current: <b id="ctrlCurrent">—</b></div>
-      </div>
-      <div id="ctrlPlayersList" class="ctrlPlayersList"></div>
-      <button id="ctrlClearAll" class="btn ghost" style="margin-top:10px;width:100%">
-        Clear All Queues
-      </button>
+  <!-- ===== CONTROLLER PANEL ===== -->
+  <div id="controller" class="hidden overlay">
+    <div class="panel">
+      <h2>🎛️ Controller</h2>
+      <div id="ctrlTurn" class="ctrl-turn">Player 1 er turn</div>
+      <div id="ctrlDice" class="ctrl-dice">–</div>
+      <button id="ctrlRollBtn" class="big-btn">Roll Dice</button>
+      <button id="ctrlCloseBtn" class="close-btn">✕ Close</button>
     </div>
   </div>
-</div>
 
-<div id="toast" class="toast"></div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="board.js"></script>
-<script src="sound.js"></script>
-<script src="client.js"></script>
+  <script src="board.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>
