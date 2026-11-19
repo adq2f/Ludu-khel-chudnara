@@ -4,116 +4,120 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0b1120">
-<title>Ludo · Display + Controller</title>
+<title>Ludo King · Multiplayer</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- ================= ROLE CHOOSER ================= -->
-<section id="screenChooser" class="screen show">
+<!-- ========== ENTRY ========== -->
+<section id="screenEntry" class="screen show">
   <div class="card">
     <h1 class="logo">LUDO<span>KING</span></h1>
-    <p class="tagline">Two-device setup</p>
-    <button id="btnBeDisplay" class="btn primary">📺 I'm the DISPLAY</button>
-    <p class="hint">Big screen showing the board</p>
-    <button id="btnBeControl" class="btn">📱 I'm the CONTROLLER</button>
-    <p class="hint">The phone that rolls the dice</p>
-    <p class="hint" style="margin-top:18px;font-size:11px;color:#666">Both devices must use same link</p>
+    <p class="tagline">Multiplayer · Match Code</p>
+
+    <label class="lbl">Your Name</label>
+    <input id="nameInput" class="inp" maxlength="12" placeholder="e.g. Rahim">
+
+    <label class="lbl">Total Players</label>
+    <div class="seg" id="maxSeg">
+      <button data-v="2">2</button>
+      <button data-v="3">3</button>
+      <button data-v="4" class="on">4</button>
+    </div>
+
+    <button id="createBtn" class="btn primary">Create Room</button>
+
+    <div class="divider"><span>or join with code</span></div>
+    <input id="codeInput" class="inp code" maxlength="6" placeholder="ABC123">
+    <button id="joinBtn" class="btn">Join Room</button>
+
+    <p class="hint" id="entryHint"></p>
   </div>
 </section>
 
-<!-- ================= DISPLAY MODE ================= -->
-<section id="screenDisplay" class="screen displayMode">
-  <div class="dTopBar">
-    <div class="dCode">Code: <span id="dCode">------</span></div>
-    <button id="dSoundBtn" class="iconBtn">🔊</button>
-  </div>
+<!-- ========== LOBBY ========== -->
+<section id="screenLobby" class="screen">
+  <div class="card">
+    <p class="lbl">Match Code</p>
+    <div class="codeBox" id="lobbyCode">------</div>
+    <p class="hint">Share with friends</p>
 
-  <div class="dBoardWrap">
-    <canvas id="dBoard" width="600" height="600"></canvas>
-  </div>
+    <p class="lbl">Players</p>
+    <div id="lobbyPlayers" class="playerList"></div>
 
-  <div class="dBottom">
-    <div id="dTurnBanner" class="turnBanner">Waiting for controller…</div>
-    <div id="dPlayers" class="dPlayers"></div>
-    <div id="dDice" class="dDice" style="display:none">🎲 6</div>
-  </div>
-
-  <div id="dWaitOv" class="overlay show">
-    <div class="winCard">
-      <h2 style="font-size:20px;margin-bottom:8px">Waiting for controller…</h2>
-      <div class="bigCode" id="dBigCode">------</div>
-      <p class="hint">Controller will join with this code</p>
+    <div class="row">
+      <button id="startBtn" class="btn primary">Start Game</button>
+      <button id="leaveBtn" class="btn ghost">Leave</button>
     </div>
   </div>
 </section>
 
-<!-- ================= CONTROLLER MODE ================= -->
-<section id="screenControl" class="screen controlMode">
-  <!-- join screen -->
-  <div id="ctrlJoin" class="card" style="max-width:340px">
-    <h2 style="text-align:center;margin-bottom:14px;font-size:22px">Controller Setup</h2>
-    <input id="ctrlCodeInput" class="inp code" maxlength="6" placeholder="ABC123">
-    <button id="ctrlJoinBtn" class="btn primary">Join Game</button>
-    <p class="hint">Enter the code shown on the display</p>
+<!-- ========== GAME ========== -->
+<section id="screenGame" class="screen">
+  <header class="hud">
+    <div class="chip">#<span id="gameCode">------</span></div>
+    <div class="chip small" id="streakChip" style="display:none"></div>
+    <button id="soundBtn" class="iconBtn">🔊</button>
+  </header>
+
+  <div class="boardWrap">
+    <canvas id="board" width="600" height="600"></canvas>
   </div>
 
-  <!-- setup players -->
-  <div id="ctrlSetup" class="card" style="display:none;max-width:360px">
-    <h2 style="text-align:center;margin-bottom:10px;font-size:20px">Setup Players</h2>
-    <div id="ctrlNames">
-      <input class="inp nameIn" placeholder="Player 1" data-i="0">
-      <input class="inp nameIn" placeholder="Player 2" data-i="1">
-      <input class="inp nameIn" placeholder="Player 3" data-i="2">
-      <input class="inp nameIn" placeholder="Player 4" data-i="3">
-    </div>
-    <button id="ctrlStartBtn" class="btn primary">▶ START GAME</button>
-    <p class="hint" id="ctrlSetupHint">Display connected: waiting…</p>
-  </div>
-
-  <!-- in-game panel -->
-  <div id="ctrlGame" style="display:none;width:100%;max-width:380px;padding:10px">
-    <div class="cTop">
-      <div class="chip">#<span id="cCode">------</span></div>
-      <button id="cSoundBtn" class="iconBtn" style="margin-left:auto">🔊</button>
-    </div>
-
-    <div class="cTurn">
-      <div class="cTurnLabel">CURRENT TURN</div>
-      <div id="cTurnName" class="cTurnName">—</div>
-    </div>
-
-    <div class="cDiceBox">
-      <div class="cDiceVal" id="cDiceVal">—</div>
-      <button id="cRollBtn" class="btn rollBtn" style="margin:0">ROLL</button>
-    </div>
-
-    <div class="cForce">
-      <label>Force next dice:</label>
-      <div class="forceBtns">
-        <button data-v="1">1</button><button data-v="2">2</button>
-        <button data-v="3">3</button><button data-v="4">4</button>
-        <button data-v="5">5</button><button data-v="6">6</button>
-        <button data-v="0" class="forceClear">Auto</button>
+  <footer class="controls">
+    <div id="turnBanner" class="banner">Waiting…</div>
+    <div class="diceRow">
+      <div class="diceStage">
+        <div class="dice" id="dice">
+          <div class="face f1"></div><div class="face f2"></div>
+          <div class="face f3"></div><div class="face f4"></div>
+          <div class="face f5"></div><div class="face f6"></div>
+        </div>
       </div>
+      <button id="rollBtn" class="btn rollBtn" disabled>ROLL</button>
+    </div>
+  </footer>
+</section>
+
+<!-- ========== WIN ========== -->
+<div id="winOverlay" class="overlay">
+  <div class="winCard">
+    <div class="trophy">🏆</div>
+    <h2 id="winText">Winner!</h2>
+    <button id="againBtn" class="btn primary">Play Again</button>
+  </div>
+</div>
+
+<!-- ========== SECRET EMOJI ========== -->
+<div id="secretEmoji" title="">🎲</div>
+
+<!-- ========== CONTROLLER MODAL ========== -->
+<div id="ctrlModal">
+  <div class="ctrlCard">
+    <button class="ctrlClose" id="ctrlClose">✕</button>
+
+    <div id="ctrlJoinForm">
+      <h2 class="ctrlTitle">🔮 Controller</h2>
+      <p class="ctrlSub">Match code din</p>
+      <input id="ctrlCodeIn" class="inp code" maxlength="6" placeholder="ABC123">
+      <button id="ctrlJoinBtn" class="btn primary">Enter</button>
     </div>
 
-    <div class="cMoves">
-      <div class="cMovesLabel">Select Token to Move:</div>
-      <div id="cMoveBtns" class="moveBtns"></div>
-    </div>
-
-    <div class="cPlayerList" id="cPlayerList"></div>
-
-    <div class="cActions">
-      <button id="cSkipBtn" class="btn ghost">Skip Turn</button>
-      <button id="cRestartBtn" class="btn ghost">Restart</button>
+    <div id="ctrlDash" style="display:none">
+      <h2 class="ctrlTitle">🔮 Controller Panel</h2>
+      <div class="ctrlInfo">
+        <div>Match: <b id="ctrlMatchId">—</b></div>
+        <div>Current: <b id="ctrlCurrent">—</b></div>
+      </div>
+      <div id="ctrlPlayersList" class="ctrlPlayersList"></div>
+      <button id="ctrlClearAll" class="btn ghost" style="margin-top:10px;width:100%">
+        Clear All Queues
+      </button>
     </div>
   </div>
-</section>
+</div>
 
 <div id="toast" class="toast"></div>
-<div id="winOv" class="overlay"><div class="winCard"><div class="trophy">🏆</div><h2 id="winText"></h2><button id="againBtn" class="btn primary">Play Again</button></div></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="board.js"></script>
