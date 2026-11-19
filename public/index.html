@@ -8,35 +8,32 @@
 </head>
 <body>
 
-  <!-- ===== LANDING PAGE ===== -->
-  <div id="landing" class="screen">
+  <!-- ===== Landing Screen ===== -->
+  <div id="landing" class="screen show">
     <h1 class="logo">🎲 Ludu Khela</h1>
+    <p class="tagline">৪ জন একসাথে খেলুন</p>
     <button id="playBtn" class="big-btn">Play Game</button>
-    <p class="hint">৪ জন একসাথে খেলুন</p>
   </div>
 
-  <!-- ===== GAME SCREEN ===== -->
-  <div id="game" class="screen hidden">
+  <!-- ===== Game Screen ===== -->
+  <div id="game" class="screen">
     <div id="turnBanner" class="turn-banner">Player 1 er turn</div>
-
     <div class="board-wrap">
-      <canvas id="board" width="420" height="420"></canvas>
+      <canvas id="board" width="600" height="600"></canvas>
     </div>
-
-    <div id="diceBox" class="dice-box">
-      <span id="diceValue">–</span>
+    <div class="dice-row">
+      <div id="diceBox" class="dice-box">–</div>
     </div>
-
     <div id="playersInfo" class="players-info"></div>
   </div>
 
-  <!-- ===== 1 MATCH RUNNING (hidden, 7-tap পরে দেখাবে) ===== -->
-  <div id="matchRunning" class="hidden overlay">
+  <!-- ===== 1 Match Running Overlay (hidden) ===== -->
+  <div id="matchRunning" class="overlay hidden">
     <button id="matchRunningBtn" class="big-btn green">1 Match Running</button>
   </div>
 
-  <!-- ===== CONTROLLER PANEL ===== -->
-  <div id="controller" class="hidden overlay">
+  <!-- ===== Controller Panel (hidden) ===== -->
+  <div id="controller" class="overlay hidden">
     <div class="panel">
       <h2>🎛️ Controller</h2>
       <div id="ctrlTurn" class="ctrl-turn">Player 1 er turn</div>
@@ -47,6 +44,7 @@
   </div>
 
   <script src="board.js"></script>
+  <script src="sound.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
