@@ -1,65 +1,80 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Ludu Khela</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ludu Khela</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- ============ LANDING ============ -->
-  <div id="landing" class="screen show">
+<!-- ================= LANDING ================= -->
+<div id="landing" class="screen show">
+  <div class="landing-inner">
     <h1 class="logo">🎲 Ludu Khela</h1>
     <p class="tagline">৪ জন একসাথে খেলুন</p>
     <button id="playBtn" class="big-btn">▶ Play Game</button>
-    <p class="hint">প্রথমে Play Game চাপুন</p>
+    <p class="hint">যেকোনো জায়গায় ৭ বার ট্যাপ → Controller (Play Game বাটন বাদে)</p>
   </div>
+</div>
 
-  <!-- ============ GAME ============ -->
-  <div id="game" class="screen">
-    <div id="turnBanner" class="turn-banner">Player 1 এর পালা</div>
+<!-- ================= GAME BOARD ================= -->
+<div id="game" class="screen">
+  <div id="turnBanner" class="turn-banner">Player 1 এর পালা</div>
 
-    <div class="board-wrap">
-      <canvas id="board" width="600" height="600"></canvas>
+  <div id="scoreboard" class="scoreboard">
+    <div class="player-chip" data-color="red">
+      <span class="dot"></span><span class="pname">Player 1</span><span class="home">0/4</span>
     </div>
-
-    <div class="controls-row">
-      <div id="diceBox" class="dice-box">–</div>
-      <button id="rollBtn" class="roll-btn">
-        <span class="roll-label">🎲 Roll</span>
-        <span id="timerText" class="timer-text"></span>
-      </button>
+    <div class="player-chip" data-color="green">
+      <span class="dot"></span><span class="pname">Player 2</span><span class="home">0/4</span>
     </div>
-  </div>
-
-  <!-- ============ 1 MATCH RUNNING (hidden; only 7-tap এ খোলে) ============ -->
-  <div id="matchRunning" class="overlay hidden">
-    <button id="matchRunningBtn" class="big-btn green">Continue Match</button>
-  </div>
-
-  <!-- ============ CONTROLLER PANEL ============ -->
-  <div id="controller" class="overlay hidden">
-    <div class="panel">
-      <h2>🎛️ Controller</h2>
-      <div id="ctrlTurn" class="ctrl-turn">Player 1 এর পালা</div>
-      <div id="ctrlDice" class="ctrl-dice">–</div>
-      <button id="ctrlRollBtn" class="big-btn">🎲 Roll</button>
-      <div class="force-grid">
-        <button class="force-dice" data-value="1">1</button>
-        <button class="force-dice" data-value="2">2</button>
-        <button class="force-dice" data-value="3">3</button>
-        <button class="force-dice" data-value="4">4</button>
-        <button class="force-dice" data-value="5">5</button>
-        <button class="force-dice" data-value="6">6</button>
-      </div>
-      <button id="ctrlSkipBtn" class="close-btn">⏭ Force Skip Turn</button>
-      <button id="ctrlCloseBtn" class="close-btn">✕ Close</button>
+    <div class="player-chip" data-color="yellow">
+      <span class="dot"></span><span class="pname">Player 3</span><span class="home">0/4</span>
+    </div>
+    <div class="player-chip" data-color="blue">
+      <span class="dot"></span><span class="pname">Player 4</span><span class="home">0/4</span>
     </div>
   </div>
 
-  <script src="board.js"></script>
-  <script src="sound.js"></script>
-  <script src="game.js"></script>
+  <div class="board-wrap">
+    <canvas id="board" width="600" height="600"></canvas>
+  </div>
+
+  <div class="controls-row">
+    <div id="diceBox" class="dice-box">–</div>
+    <button id="rollBtn" class="roll-btn">🎲 Roll</button>
+  </div>
+</div>
+
+<!-- ================= CONTROLLER OVERLAY ================= -->
+<div id="controller" class="overlay hidden">
+  <div class="panel">
+    <h2>🎛️ Controller</h2>
+    <div id="ctrlTurn" class="ctrl-turn">—</div>
+    <div id="ctrlDice" class="ctrl-dice">–</div>
+
+    <button id="ctrlRollBtn" class="big-btn">🎲 Roll Dice</button>
+
+    <p class="force-label">Force Dice (Referee)</p>
+    <div class="force-grid">
+      <button class="force-dice" data-value="1">1</button>
+      <button class="force-dice" data-value="2">2</button>
+      <button class="force-dice" data-value="3">3</button>
+      <button class="force-dice" data-value="4">4</button>
+      <button class="force-dice" data-value="5">5</button>
+      <button class="force-dice" data-value="6">6</button>
+    </div>
+
+    <button id="ctrlSkipBtn" class="close-btn">⏭ Force Skip Turn</button>
+    <button id="ctrlResetBtn" class="close-btn">🔄 Reset Game</button>
+    <button id="ctrlCloseBtn" class="close-btn">✕ Close Controller</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="board.js"></script>
+<script src="sound.js"></script>
+<script src="game.js"></script>
 </body>
 </html>
