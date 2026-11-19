@@ -1,280 +1,272 @@
-/* =========================================================
-   Board geometry + rendering  (15x15 grid, 600x600 canvas)
-   ========================================================= */
 const LudoBoard = (() => {
-  const CELL = 40;
-  const SIZE = 600;
-
-  /* The 52-cell main ring, in order */
-  const RING = [
-    [6,13],[6,12],[6,11],[6,10],[6,9],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8],
-    [0,7],
-    [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],
-    [7,0],
-    [8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[9,6],[10,6],[11,6],[12,6],[13,6],[14,6],
-    [14,7],
-    [14,8],[13,8],[12,8],[11,8],[10,8],[9,8],[8,9],[8,10],[8,11],[8,12],[8,13],[8,14],
-    [7,14],
-    [6,14]
-  ];
-
-  const START = { red: 0, green: 13, yellow: 26, blue: 39 };
-  const SAFE  = [0, 8, 13, 21, 26, 34, 39, 47];
-
-  /* 5 home-column cells per colour */
-  const HOME_PATH = {
-    red:    [[7,13],[7,12],[7,11],[7,10],[7,9]],
-    green:  [[1,7],[2,7],[3,7],[4,7],[5,7]],
-    yellow: [[7,1],[7,2],[7,3],[7,4],[7,5]],
-    blue:   [[13,7],[12,7],[11,7],[10,7],[9,7]]
-  };
-
-  const BASES = {
-    red:    [[75,435],[165,435],[75,525],[165,525]],
-    green:  [[75,75],[165,75],[75,165],[165,165]],
-    yellow: [[435,75],[525,75],[435,165],[525,165]],
-    blue:   [[435,435],[525,435],[435,525],[525,525]]
-  };
-
-  const FIN = {
-    red:    [300, 332],
-    green:  [268, 300],
-    yellow: [300, 268],
-    blue:   [332, 300]
-  };
-
-  const HEX = {
-    red:    '#ef4444',
-    green:  '#22c55e',
-    yellow: '#eab308',
-    blue:   '#3b82f6'
-  };
-
+  const CELL = 40;                  // 600/15
   const COLORS = ['red', 'green', 'yellow', 'blue'];
 
-  const cellXY = (c, r) => [c * CELL + CELL / 2, r * CELL + CELL / 2];
+  const HEX = {
+    red:    '#e63946',
+    green:  '#2a9d8f',
+    yellow: '#f4a261',
+    blue:   '#457b9d'
+  };
+  const HEX_LIGHT = {
+    red:    '#ffd6da',
+    green:  '#c5e8e3',
+    yellow: '#fde4c7',
+    blue:   '#cfe0ed'
+  };
 
-  function posToXY(color, p, idx) {
-    if (p === -1) {
-      const s = BASES[color][idx];
-      return { x: s[0], y: s[1] };
+  // 52-cell outer path (row, col)
+  const PATH = [
+    [6,1],[6,2],[6,3],[6,4],[6,5],
+    [5,6],[4,6],[3,6],[2,6],[1,6],[0,6],
+    [0,7],
+    [0,8],[1,8],[2,8],[3,8],[4,8],[5,8],
+    [6,9],[6,10],[6,11],[6,12],[6,13],[6,14],
+    [7,14],
+    [8,14],[8,13],[8,12],[8,11],[8,10],[8,9],
+    [9,8],[10,8],[11,8],[12,8],[13,8],[14,8],
+    [14,7],
+    [14,6],[13,6],[12,6],[11,6],[10,6],[9,6],
+    [8,5],[8,4],[8,3],[8,2],[8,1],[8,0],
+    [7,0],
+    [6,0]
+  ];
+
+  const STARTS = { red: 0, green: 13, yellow: 26, blue: 39 };
+  const SAFE   = [0, 8, 13, 21, 26, 34, 39, 47];
+
+  const HOME_COL = {
+    red:    [[7,1],[7,2],[7,3],[7,4],[7,5]],
+    green:  [[1,7],[2,7],[3,7],[4,7],[5,7]],
+    yellow: [[7,13],[7,12],[7,11],[7,10],[7,9]],
+    blue:   [[13,8],[12,8],[11,8],[10,8],[9,8]]
+  };
+
+  const HOME_POS = {
+    red:    [7,6],
+    green:  [6,7],
+    yellow: [7,8],
+    blue:   [8,8]
+  };
+
+  const BASE_POS = {
+    red:    [[1,1],[1,3],[3,1],[3,3]],
+    green:  [[1,11],[1,13],[3,11],[3,13]],
+    yellow: [[11,11],[11,13],[13,11],[13,13]],
+    blue:   [[11,1],[11,3],[13,1],[13,3]]
+  };
+
+  // ============ POSITION TO PIXEL ============
+  function cellToXY(row, col) {
+    return { x: col * CELL + CELL / 2, y: row * CELL + CELL / 2 };
+  }
+  function posToXY(color, pos, tokenIdx) {
+    let cell;
+    if (pos === -1) {
+      cell = BASE_POS[color][tokenIdx];
+    } else if (pos <= 50) {
+      cell = PATH[(STARTS[color] + pos) % 52];
+    } else if (pos <= 55) {
+      cell = HOME_COL[color][pos - 51];
+    } else {
+      cell = HOME_POS[color];
     }
-    if (p <= 50) {
-      const [c, r] = RING[(START[color] + p) % 52];
-      const [x, y] = cellXY(c, r);
-      return { x, y };
-    }
-    if (p <= 55) {
-      const [c, r] = HOME_PATH[color][p - 51];
-      const [x, y] = cellXY(c, r);
-      return { x, y };
-    }
-    const [cx, cy] = FIN[color];
-    const off = [[-10,-10],[10,-10],[-10,10],[10,10]][idx];
-    return { x: cx + off[0], y: cy + off[1] };
+    return cellToXY(cell[0], cell[1]);
   }
 
-  /* ---------- static background ---------- */
-  function roundRect(g, x, y, w, h, r) {
-    g.beginPath();
-    g.moveTo(x + r, y);
-    g.arcTo(x + w, y, x + w, y + h, r);
-    g.arcTo(x + w, y + h, x, y + h, r);
-    g.arcTo(x, y + h, x, y, r);
-    g.arcTo(x, y, x + w, y, r);
-    g.closePath();
-  }
+  // ============ BACKGROUND CANVAS ============
+  let bg = null;
 
-  function star(g, cx, cy, outer, inner, pts, color) {
-    g.beginPath();
-    for (let i = 0; i < pts * 2; i++) {
-      const r = i % 2 ? inner : outer;
-      const a = (Math.PI / pts) * i - Math.PI / 2;
-      const x = cx + Math.cos(a) * r;
-      const y = cy + Math.sin(a) * r;
-      i ? g.lineTo(x, y) : g.moveTo(x, y);
-    }
-    g.closePath();
-    g.fillStyle = color;
-    g.fill();
-  }
+  function getBG() {
+    if (bg) return bg;
+    const c = document.createElement('canvas');
+    c.width = 600; c.height = 600;
+    const x = c.getContext('2d');
 
-  function drawBaseQuadrant(g, color, ox, oy) {
-    g.save();
-    roundRect(g, ox + 6, oy + 6, 228, 228, 22);
-    g.fillStyle = HEX[color];
-    g.fill();
-    g.shadowColor = 'rgba(0,0,0,.35)';
-    g.shadowBlur = 14;
-    g.shadowOffsetY = 5;
+    // white background
+    x.fillStyle = '#ffffff';
+    x.fillRect(0, 0, 600, 600);
 
-    roundRect(g, ox + 26, oy + 26, 188, 188, 16);
-    g.fillStyle = 'rgba(255,255,255,.94)';
-    g.fill();
-    g.restore();
+    // ---- four home squares ----
+    drawHomeSquare(x, 0, 0, 'red');
+    drawHomeSquare(x, 9 * CELL, 0, 'green');
+    drawHomeSquare(x, 9 * CELL, 9 * CELL, 'yellow');
+    drawHomeSquare(x, 0, 9 * CELL, 'blue');
 
-    /* token slots */
-    g.save();
-    g.strokeStyle = HEX[color];
-    g.globalAlpha = .35;
-    g.lineWidth = 3;
-    BASES[color].forEach(([x, y]) => {
-      g.beginPath();
-      g.arc(x, y, 20, 0, Math.PI * 2);
-      g.stroke();
-    });
-    g.restore();
-  }
-
-  let bgCanvas = null;
-
-  function buildBackground() {
-    const cv = document.createElement('canvas');
-    cv.width = SIZE; cv.height = SIZE;
-    const g = cv.getContext('2d');
-
-    /* outer */
-    g.fillStyle = '#0d1324';
-    g.fillRect(0, 0, SIZE, SIZE);
-
-    /* white board */
-    g.fillStyle = '#f4f7ff';
-    roundRect(g, 4, 4, SIZE - 8, SIZE - 8, 22);
-    g.fill();
-
-    /* bases */
-    drawBaseQuadrant(g, 'green',   0,   0);
-    drawBaseQuadrant(g, 'yellow', 360,   0);
-    drawBaseQuadrant(g, 'red',     0, 360);
-    drawBaseQuadrant(g, 'blue',  360, 360);
-
-    /* ring cells */
-    RING.forEach(([c, r], i) => {
-      const x = c * CELL, y = r * CELL;
-
+    // ---- path cells ----
+    PATH.forEach(([r, c], i) => {
       let fill = '#ffffff';
-      const owner = COLORS.find(k => START[k] === i);
-      if (owner) fill = HEX[owner];
+      let stroke = '#cfd6e4';
+      // color-coded start cells
+      for (const color of COLORS) {
+        if (i === STARTS[color]) { fill = HEX[color]; stroke = HEX[color]; }
+      }
+      // safe star cells
+      if (SAFE.includes(i) && !Object.values(STARTS).includes(i)) {
+        fill = '#f0f3f9';
+      }
+      const px = c * CELL, py = r * CELL;
+      x.fillStyle = fill;
+      x.strokeStyle = stroke;
+      x.lineWidth = 2;
+      x.beginPath();
+      x.roundRect(px + 1, py + 1, CELL - 2, CELL - 2, 6);
+      x.fill();
+      x.stroke();
 
-      g.fillStyle = fill;
-      g.fillRect(x, y, CELL, CELL);
-
-      g.strokeStyle = 'rgba(120,140,180,.35)';
-      g.lineWidth = 1;
-      g.strokeRect(x + .5, y + .5, CELL - 1, CELL - 1);
-
+      // safe star
       if (SAFE.includes(i)) {
-        star(g, x + CELL / 2, y + CELL / 2, 12, 5.2, 5,
-             owner ? 'rgba(255,255,255,.85)' : 'rgba(150,165,195,.55)');
+        drawStar(x, px + CELL / 2, py + CELL / 2, 10, fill === '#ffffff' ? '#f4a261' : '#ffffff');
       }
     });
 
-    /* home columns */
-    COLORS.forEach(col => {
-      HOME_PATH[col].forEach(([c, r]) => {
-        const x = c * CELL, y = r * CELL;
-        g.fillStyle = HEX[col];
-        g.fillRect(x, y, CELL, CELL);
-        g.strokeStyle = 'rgba(255,255,255,.45)';
-        g.strokeRect(x + .5, y + .5, CELL - 1, CELL - 1);
+    // ---- home columns ----
+    for (const color of COLORS) {
+      const cols = HOME_COL[color];
+      cols.forEach(([r, c]) => {
+        const px = c * CELL, py = r * CELL;
+        x.fillStyle = HEX[color];
+        x.strokeStyle = '#ffffff';
+        x.lineWidth = 2;
+        x.beginPath();
+        x.roundRect(px + 1, py + 1, CELL - 2, CELL - 2, 6);
+        x.fill();
+        x.stroke();
       });
-    });
-
-    /* centre triangles */
-    const cx = 300, cy = 300;
-    const tri = (ax, ay, bx, by, col) => {
-      g.beginPath();
-      g.moveTo(ax, ay); g.lineTo(bx, by); g.lineTo(cx, cy);
-      g.closePath();
-      g.fillStyle = col; g.fill();
-      g.strokeStyle = 'rgba(255,255,255,.6)';
-      g.lineWidth = 2; g.stroke();
-    };
-    tri(240, 240, 360, 240, HEX.yellow);
-    tri(360, 240, 360, 360, HEX.blue);
-    tri(360, 360, 240, 360, HEX.red);
-    tri(240, 360, 240, 240, HEX.green);
-
-    /* inner glow ring */
-    g.beginPath();
-    g.arc(cx, cy, 26, 0, Math.PI * 2);
-    g.fillStyle = 'rgba(255,255,255,.12)';
-    g.fill();
-
-    return cv;
-  }
-
-  /* ---------- token ---------- */
-  function drawToken(g, x, y, color, opts = {}) {
-    const r = opts.r || 15;
-    const glow = opts.movable ? 1 : 0;
-
-    g.save();
-
-    /* shadow */
-    g.beginPath();
-    g.ellipse(x, y + r * .72, r * .95, r * .38, 0, 0, Math.PI * 2);
-    g.fillStyle = 'rgba(0,0,0,.28)';
-    g.fill();
-
-    /* pulsing ring for movable tokens */
-    if (glow) {
-      const t = (Date.now() % 1000) / 1000;
-      const pr = r + 6 + Math.sin(t * Math.PI * 2) * 3;
-      g.beginPath();
-      g.arc(x, y, pr, 0, Math.PI * 2);
-      g.strokeStyle = `rgba(255,255,255,${0.35 + 0.3 * Math.sin(t * Math.PI * 2)})`;
-      g.lineWidth = 3;
-      g.stroke();
     }
 
-    /* white outer */
-    g.beginPath();
-    g.arc(x, y, r + 2.5, 0, Math.PI * 2);
-    g.fillStyle = '#ffffff';
-    g.fill();
+    // ---- center triangles ----
+    drawCenter(x);
 
-    /* body */
-    const grad = g.createRadialGradient(x - r * .35, y - r * .45, r * .15, x, y, r);
-    grad.addColorStop(0, lighten(HEX[color], .45));
-    grad.addColorStop(1, HEX[color]);
-    g.beginPath();
-    g.arc(x, y, r, 0, Math.PI * 2);
-    g.fillStyle = grad;
-    g.fill();
-
-    /* rim */
-    g.beginPath();
-    g.arc(x, y, r, 0, Math.PI * 2);
-    g.strokeStyle = 'rgba(0,0,0,.18)';
-    g.lineWidth = 1.5;
-    g.stroke();
-
-    /* highlight */
-    g.beginPath();
-    g.ellipse(x - r * .3, y - r * .42, r * .34, r * .22, -0.6, 0, Math.PI * 2);
-    g.fillStyle = 'rgba(255,255,255,.55)';
-    g.fill();
-
-    g.restore();
+    bg = c;
+    return bg;
   }
 
-  function lighten(hex, amt) {
-    const n = parseInt(hex.slice(1), 16);
-    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-    r = Math.min(255, Math.round(r + (255 - r) * amt));
-    g = Math.min(255, Math.round(g + (255 - g) * amt));
-    b = Math.min(255, Math.round(b + (255 - b) * amt));
-    return `rgb(${r},${g},${b})`;
+  function drawHomeSquare(x, px, py, color) {
+    const size = CELL * 6;
+    // outer border
+    x.fillStyle = HEX[color];
+    x.beginPath();
+    x.roundRect(px + 4, py + 4, size - 8, size - 8, 18);
+    x.fill();
+
+    // inner white
+    x.fillStyle = '#ffffff';
+    x.beginPath();
+    x.roundRect(px + 4 + 40, py + 4 + 40, size - 8 - 80, size - 8 - 80, 12);
+    x.fill();
+
+    // 4 base circles
+    const baseCenters = BASE_POS[color];
+    baseCenters.forEach(([r, c]) => {
+      const cx = c * CELL + CELL / 2;
+      const cy = r * CELL + CELL / 2;
+      x.beginPath();
+      x.fillStyle = HEX_LIGHT[color];
+      x.arc(cx, cy, 22, 0, Math.PI * 2);
+      x.fill();
+      x.strokeStyle = HEX[color];
+      x.lineWidth = 3;
+      x.stroke();
+    });
   }
 
-  function getBG() {
-    if (!bgCanvas) bgCanvas = buildBackground();
-    return bgCanvas;
+  function drawCenter(x) {
+    const cx = 300, cy = 300, r = CELL * 1.5;
+    // 4 triangles
+    const colors = [
+      { color: 'red',    x1: cx, y1: cy, x2: cx - r, y2: cy - r, x3: cx + r, y3: cy - r }, // top
+      { color: 'green',  x1: cx, y1: cy, x2: cx + r, y2: cy - r, x3: cx + r, y3: cy + r }, // right
+      { color: 'yellow', x1: cx, y1: cy, x2: cx + r, y2: cy + r, x3: cx - r, y3: cy + r }, // bottom
+      { color: 'blue',   x1: cx, y1: cy, x2: cx - r, y2: cy + r, x3: cx - r, y3: cy - r }  // left
+    ];
+    colors.forEach(t => {
+      x.beginPath();
+      x.moveTo(t.x1, t.y1);
+      x.lineTo(t.x2, t.y2);
+      x.lineTo(t.x3, t.y3);
+      x.closePath();
+      x.fillStyle = HEX[t.color];
+      x.fill();
+      x.strokeStyle = '#ffffff';
+      x.lineWidth = 3;
+      x.stroke();
+    });
   }
 
-  return {
-    CELL, SIZE, RING, START, SAFE, HOME_PATH, BASES, HEX, COLORS,
-    posToXY, drawToken, getBG, star, roundRect
-  };
+  function drawStar(x, cx, cy, size, color) {
+    x.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a1 = (Math.PI / 2) + i * (Math.PI * 2 / 5);
+      const a2 = a1 + Math.PI / 5;
+      const px1 = cx + Math.cos(a1) * size;
+      const py1 = cy + Math.sin(a1) * size;
+      const px2 = cx + Math.cos(a2) * size * 0.5;
+      const py2 = cy + Math.sin(a2) * size * 0.5;
+      if (i === 0) x.moveTo(px1, py1);
+      else x.lineTo(px1, py1);
+      x.lineTo(px2, py2);
+    }
+    x.closePath();
+    x.fillStyle = color;
+    x.fill();
+  }
+
+  // ============ TOKEN ============
+  function drawToken(ctx, x, y, color, opts = {}) {
+    const r = opts.r || 14;
+    const { movable = false } = opts;
+
+    // shadow
+    ctx.beginPath();
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.ellipse(x + 2, y + r * 0.9, r * 0.9, r * 0.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // body
+    const grad = ctx.createRadialGradient(x - r * 0.4, y - r * 0.4, 2, x, y, r);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.4, HEX[color]);
+    grad.addColorStop(1, shade(HEX[color], -30));
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // inner dot
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fill();
+
+    // movable glow
+    if (movable) {
+      ctx.beginPath();
+      ctx.arc(x, y, r + 6, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, y, r + 10, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,209,102,0.4)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+  }
+
+  function shade(hex, pct) {
+    const n = parseInt(hex.replace('#', ''), 16);
+    const amt = Math.round(2.55 * pct);
+    const R = Math.max(0, Math.min(255, (n >> 16) + amt));
+    const G = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
+    const B = Math.max(0, Math.min(255, (n & 0xff) + amt));
+    return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+  }
+
+  return { COLORS, HEX, STARTS, SAFE, PATH, posToXY, drawToken, getBG };
 })();
+
+window.LudoBoard = LudoBoard;
