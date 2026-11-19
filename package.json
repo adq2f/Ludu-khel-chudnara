@@ -1,0 +1,17 @@
+{
+  "name": "ludo-king-multiplayer",
+  "version": "1.0.0",
+  "description": "Multiplayer Ludo with match code, 3D dice, animation & sound",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
